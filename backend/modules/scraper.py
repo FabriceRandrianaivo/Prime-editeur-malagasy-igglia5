@@ -11,7 +11,8 @@ from typing import Optional
 from bs4 import BeautifulSoup
 
 BASE_URL = "http://tenymalagasy.org"
-HEADERS = {"User-Agent": "Mozilla/5.0 (Educational research bot)"}
+WIKI_API_URL = "https://mg.wikipedia.org/w/api.php"
+HEADERS = {"User-Agent": "MalagasyNLPBot/1.0 (Educational research; mg.wikipedia.org)"}
 
 def get_all_ranges() -> list[str]:
     """Récupère toutes les plages de lettres disponibles sur le site."""
@@ -213,8 +214,83 @@ def build_dictionary(
     return stats
 
 
+def scrape_wikipedia(limit: int = 10) -> list[str]:
+    """
+    Récupère le texte de 'limit' articles aléatoires de Wikipedia Malagasy.
+    Retourne une liste de chaînes de caractères (contenu des articles).
+    """
+    texts = []
+    print(f"Récupération de {limit} articles Wikipedia MG...")
+    
+    # 1. Obtenir des IDs d'articles aléatoires
+    params_random = {
+        "action": "query",
+        "format": "json",
+        "list": "random",
+        "rnnamespace": 0,
+        "rnlimit": limit
+    }
+    
+    try:
+        r = requests.get(WIKI_API_URL, params=params_random, headers=HEADERS, timeout=10)
+        random_pages = r.json().get("query", {}).get("random", [])
+        page_ids = [p["id"] for p in random_pages]
+        
+        # 2. Récupérer le contenu textuel pour chaque ID
+        for pid in page_ids:
+            params_content = {
+                "action": "query",
+                "format": "json",
+                "prop": "extracts",
+                "explaintext": True,
+                "pageids": pid
+            }
+            res = requests.get(WIKI_API_URL, params=params_content, headers=HEADERS, timeout=10)
+            pages = res.json().get("query", {}).get("pages", {})
+            page_data = pages.get(str(pid), {})
+            extract = page_data.get("extract", "")
+            
+            if extract and len(extract) > 100:
+                # Nettoyage basique
+                clean_text = re.sub(r'={2,}', '', extract) # Enlever les titres == Titre ==
+                texts.append(clean_text)
+                print(f"  - Article '{page_data.get('title')}' récupéré ({len(clean_text)} chars)")
+            
+            time.sleep(0.5) # Politesse
+            
+    except Exception as e:
+        print(f"Erreur lors du scraping Wikipedia: {e}")
+        
+    return texts
+
+
+def build_corpus(data_dir: str, limit: int = 20):
+    """Enrichit data/corpus.txt avec du texte Wikipedia."""
+    corpus_path = os.path.join(data_dir, "corpus.txt")
+    texts = scrape_wikipedia(limit)
+    
+    if not texts:
+        return
+        
+    new_content = "\n\n".join(texts)
+    
+    mode = "a" if os.path.exists(corpus_path) else "w"
+    with open(corpus_path, mode, encoding="utf-8") as f:
+        if mode == "a":
+            f.write("\n\n")
+        f.write(new_content)
+    
+    print(f"Corpus enrichi : {len(texts)} nouveaux articles ajoutés à {corpus_path}")
+
+
 if __name__ == "__main__":
     import sys
-    data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
-    max_r: Optional[int] = int(sys.argv[1]) if len(sys.argv) > 1 else None
-    build_dictionary(data_dir, max_ranges=max_r)
+    # Go up one level from 'modules' to the backend root, then into 'data'
+    backend_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    data_dir = os.path.join(backend_root, "data")
+    if len(sys.argv) > 1 and sys.argv[1] == "wiki":
+        limit = int(sys.argv[2]) if len(sys.argv) > 2 else 10
+        build_corpus(data_dir, limit=limit)
+    else:
+        max_r: Optional[int] = int(sys.argv[1]) if len(sys.argv) > 1 else None
+        build_dictionary(data_dir, max_ranges=max_r)

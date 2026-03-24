@@ -15,3 +15,6 @@ export const textToSpeech = (text, lang = 'mg') => api.post('/tts', { text, lang
 export const recognizeEntities = (text) => api.post('/ner', { text })
 export const chat = (message, history = []) => api.post('/chat', { message, history })
 export const fullAnalysis = (text) => api.post('/analyze/full', { text })
+export const scrapeDictionary = (maxRanges = null) => api.post('/scrape/dictionary', { max_ranges: maxRanges })
+export const scrapeWiki = (limit = 10) => api.post('/scrape/wiki', { limit })
+export const reloadModels = () => api.post('/reload')

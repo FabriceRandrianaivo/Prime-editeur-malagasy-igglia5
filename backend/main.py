@@ -15,7 +15,7 @@ from modules.sentiment import SentimentAnalyzer
 from modules.tts import TextToSpeech
 from modules.ner import NamedEntityRecognizer
 from modules.chatbot import ChatbotAssistant
-from modules.scraper import build_dictionary
+from modules.scraper import build_dictionary, build_corpus
 
 # Paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -71,6 +71,9 @@ class ChatRequest(BaseModel):
 
 class ScrapeRequest(BaseModel):
     max_ranges: Optional[int] = None
+
+class WikiScrapeRequest(BaseModel):
+    limit: int = 10
 
 
 # Routes
@@ -185,6 +188,34 @@ def scrape_status():
         "dictionary_words": word_count,
         "scraped_translations": trans_count,
     }
+
+
+@app.post("/scrape/wiki")
+def scrape_wiki(req: WikiScrapeRequest):
+    """Enrichit le corpus avec des articles Wikipedia."""
+    try:
+        build_corpus(DATA_DIR, limit=req.limit)
+        return {"status": "ok", "message": f"{req.limit} articles ajoutés au corpus"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/reload")
+def reload_models():
+    """Recharge tous les modèles avec les données à jour du dossier /data."""
+    global spell_checker, autocomplete, translator, sentiment_analyzer, ner
+    try:
+        spell_checker = SpellChecker(os.path.join(DATA_DIR, "dictionary.txt"))
+        autocomplete = NGramAutocomplete(os.path.join(DATA_DIR, "corpus.txt"))
+        translator = Translator(data_dir=DATA_DIR)
+        sentiment_analyzer = SentimentAnalyzer(
+            os.path.join(DATA_DIR, "sentiment_positive.txt"),
+            os.path.join(DATA_DIR, "sentiment_negative.txt")
+        )
+        ner = NamedEntityRecognizer(os.path.join(DATA_DIR, "entities.json"))
+        return {"status": "ok", "message": "Tous les modèles ont été rechargés"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/analyze/full")
