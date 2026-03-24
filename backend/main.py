@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from modules.spell_checker import SpellChecker
 from modules.lemmatizer import Lemmatizer
