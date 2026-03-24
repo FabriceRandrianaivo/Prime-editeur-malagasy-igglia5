@@ -1,0 +1,6 @@
+{
+  "cities": ["Antananarivo", "Toamasina", "Antsirabe", "Fianarantsoa", "Mahajanga", "Toliara", "Antsiranana", "Ambatondrazaka", "Manakara", "Morondava", "Ambanja", "Nosy Be", "Ambositra", "Tsiroanomandidy", "Maevatanana", "Maintirano", "Farafangana", "Vangaindrano", "Ihosy", "Ambovombe", "Andapa", "Sambava", "Antalaha", "Maroantsetra", "Moramanga"],
+  "people": ["Ravalomanana", "Rajoelina", "Ratsiraka", "Tsiranana", "Zafy", "Hery Rajaonarimampianina", "Gisèle Rabesahala", "Norbert Zafimahova"],
+  "organizations": ["ISPM", "Université d'Antananarivo", "HVM", "TIM", "AREMA", "FFKM", "Jirama", "Air Madagascar", "Madagascar Airways"],
+  "regions": ["Analamanga", "Vakinankaratra", "Itasy", "Bongolava", "Haute Matsiatra", "Amoron'i Mania", "Vatovavy", "Fitovinany", "Ihorombe", "Atsimo-Andrefana", "Androy", "Anosy", "Menabe", "Sofia", "Boeny", "Betsiboka", "Melaky", "Atsimo-Atsinanana", "Atsinanana", "Analanjirofo", "Alaotra-Mangoro", "Sava", "Diana", "Amoron'i Mania"]
+}
