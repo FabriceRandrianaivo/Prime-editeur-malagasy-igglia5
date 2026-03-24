@@ -12,6 +12,7 @@ from modules.sentiment import SentimentAnalyzer
 from modules.tts import TextToSpeech
 from modules.ner import NamedEntityRecognizer
 from modules.chatbot import ChatbotAssistant
+from modules.scraper import build_dictionary
 
 # Paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -31,7 +32,7 @@ app.add_middleware(
 spell_checker = SpellChecker(os.path.join(DATA_DIR, "dictionary.txt"))
 lemmatizer = Lemmatizer()
 autocomplete = NGramAutocomplete(os.path.join(DATA_DIR, "corpus.txt"))
-translator = Translator()
+translator = Translator(data_dir=DATA_DIR)
 sentiment_analyzer = SentimentAnalyzer(
     os.path.join(DATA_DIR, "sentiment_positive.txt"),
     os.path.join(DATA_DIR, "sentiment_negative.txt")
@@ -64,6 +65,9 @@ class TTSRequest(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     history: Optional[List[dict]] = []
+
+class ScrapeRequest(BaseModel):
+    max_ranges: Optional[int] = None
 
 
 # Routes
@@ -138,6 +142,46 @@ def chat(req: ChatRequest):
         return {"response": response}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/scrape/dictionary")
+def scrape_dictionary(req: ScrapeRequest):
+    """
+    Lance le scraping de tenymalagasy.org pour enrichir le dictionnaire.
+    max_ranges: nombre de plages à scraper (None = toutes).
+    Attention: peut prendre plusieurs minutes si max_ranges est grand.
+    """
+    try:
+        stats = build_dictionary(DATA_DIR, max_ranges=req.max_ranges)
+        # Recharger le spell checker et le translator avec les nouvelles données
+        spell_checker.dictionary = set()
+        spell_checker.word_list = []
+        dict_path = os.path.join(DATA_DIR, "dictionary.txt")
+        with open(dict_path, "r", encoding="utf-8") as f:
+            for line in f:
+                w = line.strip().lower()
+                if w:
+                    spell_checker.dictionary.add(w)
+                    spell_checker.word_list.append(w)
+        translator.reload_scraped(DATA_DIR)
+        return {"status": "ok", **stats}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/scrape/status")
+def scrape_status():
+    """Retourne le nombre de mots et traductions disponibles."""
+    dict_path = os.path.join(DATA_DIR, "dictionary.txt")
+    word_count = 0
+    if os.path.exists(dict_path):
+        with open(dict_path, "r", encoding="utf-8") as f:
+            word_count = sum(1 for l in f if l.strip())
+    trans_count = len(translator.scraped_dict)
+    return {
+        "dictionary_words": word_count,
+        "scraped_translations": trans_count,
+    }
 
 
 @app.post("/analyze/full")

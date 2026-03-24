@@ -1,5 +1,6 @@
 import os
 import re
+from itertools import islice
 
 
 class SentimentAnalyzer:
@@ -46,10 +47,10 @@ class SentimentAnalyzer:
 
         return {
             "sentiment": sentiment,
-            "score": round(score, 3),
+            "score": int(float(score) * 1000) / 1000.0,
             "positive_count": pos_count,
             "negative_count": neg_count,
-            "positive_words": list(set(pos_words_found))[:10],
-            "negative_words": list(set(neg_words_found))[:10],
+            "positive_words": list(islice(set(pos_words_found), 10)),
+            "negative_words": list(islice(set(neg_words_found), 10)),
             "total_words": total
         }

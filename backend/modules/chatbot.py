@@ -1,3 +1,4 @@
+from typing import List, Optional
 import anthropic
 
 SYSTEM_PROMPT = """Tu es un assistant linguistique spécialisé dans la langue malagasy.
@@ -25,7 +26,7 @@ class ChatbotAssistant:
             self._client = anthropic.Anthropic()
         return self._client
 
-    def chat(self, message: str, history: list = None) -> str:
+    def chat(self, message: str, history: Optional[List[dict]] = None) -> str:
         if history is not None:
             self.history = history
 

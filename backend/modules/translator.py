@@ -1,6 +1,7 @@
 import requests
 import json
 import os
+from typing import Optional
 
 # Built-in Malagasy-French dictionary (common words)
 BUILTIN_DICT = {
@@ -166,7 +167,7 @@ BUILTIN_DICT = {
 
 
 class Translator:
-    def __init__(self, data_dir: str = None):
+    def __init__(self, data_dir: str | None = None):
         self.local_dict = BUILTIN_DICT
         self.scraped_dict = {}
         if data_dir:
@@ -226,8 +227,8 @@ class Translator:
             "source": "non trouvé"
         }
 
-    def _tenymalagasy_lookup(self, word: str) -> dict:
-        from modules.scraper import scrape_word_definition
+    def _tenymalagasy_lookup(self, word: str) -> Optional[dict]:
+        from .scraper import scrape_word_definition
         entry = scrape_word_definition(word)
         translation = entry.get("fr") or entry.get("en") or ""
         if translation:
@@ -238,7 +239,7 @@ class Translator:
             }
         return None
 
-    def _wikipedia_lookup(self, word: str) -> dict:
+    def _wikipedia_lookup(self, word: str) -> Optional[dict]:
         url = "https://mg.wikipedia.org/w/api.php"
         params = {
             "action": "query",

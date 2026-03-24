@@ -1,20 +1,27 @@
 import re
 import os
-from collections import defaultdict, Counter
+from collections import Counter
+from collections import defaultdict
+from itertools import islice
+from typing import Dict, List, Tuple, cast
 
 
 class NGramAutocomplete:
     def __init__(self, corpus_path: str):
-        self.bigrams = defaultdict(Counter)
-        self.trigrams = defaultdict(Counter)
-        self.unigrams = Counter()
+        self.bigrams: Dict[str, Counter] = cast(
+            Dict[str, Counter], defaultdict(Counter)
+        )
+        self.trigrams: Dict[Tuple[str, str], Counter] = cast(
+            Dict[Tuple[str, str], Counter], defaultdict(Counter)
+        )
+        self.unigrams: Counter = Counter()
 
         if os.path.exists(corpus_path):
             with open(corpus_path, 'r', encoding='utf-8') as f:
                 text = f.read()
             self._train(text)
 
-    def _tokenize(self, text: str) -> list:
+    def _tokenize(self, text: str) -> List[str]:
         return re.findall(r'\b[a-zA-ZÀ-ÿ\']+\b', text.lower())
 
     def _train(self, text: str):
@@ -44,22 +51,26 @@ class NGramAutocomplete:
         # Bigram prediction
         if tokens[-1] in self.bigrams:
             for word, count in self.bigrams[tokens[-1]].items():
-                candidates[word] += count * 0.5
+                candidates[word] += int(count * 0.5)
 
         # Filter out already typed last word
         last_partial = tokens[-1] if tokens else ""
 
-        results = [(word, score) for word, score in candidates.most_common(20)
-                   if word != last_partial]
+        results: List[Tuple[str, int]] = [
+            (word, score) for word, score in candidates.most_common(20)
+            if word != last_partial
+        ]
 
-        return [word for word, _ in results[:n]]
+        return list(islice((word for word, _ in results), n))
 
-    def complete_word(self, partial: str, n: int = 5) -> list:
+    def complete_word(self, partial: str, n: int = 5) -> List[str]:
         """Complete a partial word"""
         if not partial:
             return []
         partial_lower = partial.lower()
-        matches = [(word, count) for word, count in self.unigrams.items()
-                   if word.startswith(partial_lower) and word != partial_lower]
+        matches: List[Tuple[str, int]] = [
+            (word, count) for word, count in self.unigrams.items()
+            if word.startswith(partial_lower) and word != partial_lower
+        ]
         matches.sort(key=lambda x: -x[1])
-        return [word for word, _ in matches[:n]]
+        return list(islice((word for word, _ in matches), n))
