@@ -46,3 +46,7 @@ Thumbs.db
 
 # PDF sujet
 *.pdf
+
+# Env copies
+.env copy
+backend/.env*
